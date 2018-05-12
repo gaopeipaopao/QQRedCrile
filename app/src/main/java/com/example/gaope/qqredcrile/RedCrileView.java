@@ -6,17 +6,23 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
+import android.graphics.RectF;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import org.w3c.dom.Text;
 
 /**
  * Created by gaope on 2018/5/10.
  */
 
-public class RedCrileView extends View {
+public class RedCrileView extends LinearLayout {
 
     private static final String TAG = "RedCrile";
 
@@ -69,6 +75,8 @@ public class RedCrileView extends View {
      */
     private float dy = 0;
 
+    private TextView textView;
+
 
     public RedCrileView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -76,8 +84,8 @@ public class RedCrileView extends View {
         paint.setColor(Color.parseColor("#fffb5d5c"));
         paint.setStyle(Paint.Style.FILL);
 
-        smallRadius = 20;
-        bigRadius = 40;
+        smallRadius = 10;
+        bigRadius = 10;
 
         smallCrileCenter = new PointF(500,500);
         bigCrileCenter = new PointF(500,500);
@@ -86,6 +94,15 @@ public class RedCrileView extends View {
 
         smallData = new float[4];
         bigData = new float[4];
+
+        textView = new TextView(getContext());
+        LayoutParams lp = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT);
+        textView.setLayoutParams(lp);
+        textView.setPadding(5,5,5,5);
+        textView.setBackgroundResource(R.drawable.red_text);
+        textView.setText("99+");
+        textView.setTextColor(Color.WHITE);
+        addView(textView);
     }
 
     @Override
@@ -94,25 +111,42 @@ public class RedCrileView extends View {
     }
 
     @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        super.onLayout(changed, l, t, r, b);
+        textView.layout((int) (bigCrileCenter.x - textView.getHeight()/2),
+                (int) (bigCrileCenter.y - textView.getHeight()/2),
+                (int) (bigCrileCenter.x + textView.getHeight()/2),
+                (int) (bigCrileCenter.y + textView.getHeight()/2));
+    }
+
+
+
+    @Override
     public boolean onTouchEvent(MotionEvent event) {
+
         bigCrileCenter.x = event.getX();
         bigCrileCenter.y = event.getY();
-        dx =  (bigCrileCenter.x - smallCrileCenter.x);
-        dy =  (bigCrileCenter.y - smallCrileCenter.y);
-        control.x = (smallCrileCenter.x + bigCrileCenter.x)/2;
-        control.y = (smallCrileCenter.y + bigCrileCenter.y)/2;
+
+        if(bigCrileCenter.x > textView.getLeft() && bigCrileCenter.x < textView.getRight()
+                && bigCrileCenter.y > textView.getTop() && bigCrileCenter.y < textView.getBottom()) {
+            invalidate();
+            return true;
+        }
         Log.d(TAG,"dx:"+dx);
         invalidate();
         return true;
     }
 
     @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-        canvas.drawCircle(smallCrileCenter.x,smallCrileCenter.y,smallRadius,paint);
-        canvas.drawCircle(bigCrileCenter.x,bigCrileCenter.y,bigRadius,paint);
-        obtainData();
+    protected void dispatchDraw(Canvas canvas) {
 
+        canvas.saveLayer(new RectF(0,0,getWidth(),getHeight()),paint,Canvas.ALL_SAVE_FLAG);
+        canvas.drawCircle(smallCrileCenter.x,smallCrileCenter.y,smallRadius,paint);
+
+        textView.setX(bigCrileCenter.x  - textView.getWidth()/2);
+        textView.setY(bigCrileCenter.y - textView.getHeight()/2);
+
+        obtainData();
         Path path = new Path();
         path.reset();
         path.moveTo(smallData[0],smallData[1]);
@@ -121,14 +155,36 @@ public class RedCrileView extends View {
         path.quadTo(control.x,control.y,smallData[2],smallData[3]);
         path.lineTo(smallData[0],smallData[1]);
         canvas.drawPath(path,paint);
-
-
-
+        canvas.restore();
+        super.dispatchDraw(canvas);
     }
+
+ //   @Override
+//    protected void onDraw(Canvas canvas) {
+//        super.onDraw(canvas);
+////        canvas.drawCircle(smallCrileCenter.x,smallCrileCenter.y,smallRadius,paint);
+////        canvas.drawCircle(bigCrileCenter.x,bigCrileCenter.y,bigRadius,paint);
+////        obtainData();
+////        Path path = new Path();
+////        path.reset();
+////        path.moveTo(smallData[0],smallData[1]);
+////        path.quadTo(control.x,control.y,bigData[0],bigData[1]);
+////        path.lineTo(bigData[2],bigData[3]);
+////        path.quadTo(control.x,control.y,smallData[2],smallData[3]);
+////        path.lineTo(smallData[0],smallData[1]);
+////        canvas.drawPath(path,paint);
+//
+//
+//
+//    }
 
     private void obtainData() {
 
         float aa = (float) Math.atan( dy/dx );
+        dx =  (bigCrileCenter.x - smallCrileCenter.x);
+        dy =  (bigCrileCenter.y - smallCrileCenter.y);
+        control.x = (smallCrileCenter.x + bigCrileCenter.x)/2;
+        control.y = (smallCrileCenter.y + bigCrileCenter.y)/2;
 
         /**
          * 大圆在小圆的右下左上，大圆在小圆的右上左下

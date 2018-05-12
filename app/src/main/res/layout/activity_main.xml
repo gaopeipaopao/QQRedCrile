@@ -1,12 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<com.example.gaope.qqredcrile.RedCrileView
     xmlns:androdi="http://schemas.android.com/apk/res/android"
     androdi:layout_width="match_parent"
     androdi:layout_height="match_parent"
     >
-    <com.example.gaope.qqredcrile.RedCrileView
-        androdi:layout_width="match_parent"
-        androdi:layout_height="match_parent"
-        androdi:id="@+id/redCrile"/>
+     
 
-</LinearLayout>
+</com.example.gaope.qqredcrile.RedCrileView>
