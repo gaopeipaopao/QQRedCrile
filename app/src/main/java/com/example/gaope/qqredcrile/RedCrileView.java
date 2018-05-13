@@ -100,9 +100,14 @@ public class RedCrileView extends LinearLayout {
     private float length;
 
     /**
-     * 判断是否是拉动状态
+     * 判断是否是拉动状态且小圆的半径不为0
      */
     private boolean touch;
+
+    /**
+     * 判断是否超过最大拉动范围且又回到可以回弹的范围内
+     */
+    private boolean mtext;
 
     /**
      *Scroller滑动
@@ -119,6 +124,7 @@ public class RedCrileView extends LinearLayout {
         scroller = new Scroller(getContext());
 
         touch = true;
+        mtext = true;
 
         smallRadius = 15;
         bigRadius = 15;
@@ -178,9 +184,24 @@ public class RedCrileView extends LinearLayout {
                 break;
             case MotionEvent.ACTION_UP:
                 //length小于minLength，回到起点，有回弹效果
-                if (length <= minLength){
+                if (touch ){
+                    mtext = true;
                     kickBackCenter();
-                }else {
+                    return true;
+                }
+                if (mtext && !touch ){
+                    //在范围内就回到起点
+                    Log.d(TAG,"touch:"+touch);
+                    if(length <= minLength){
+                        Log.d(TAG,"aaaaaaaaa");
+                        textView.setX(smallCrileCenter.x - textView.getWidth()/2);
+                        textView.setY(smallCrileCenter.y - textView.getHeight()/2);
+                        touch = true;
+                        return true;
+                    }else {
+                        //不在范围内就进行图片爆炸动画
+                    }
+
 
                 }
                 return true;
@@ -335,6 +356,7 @@ public class RedCrileView extends LinearLayout {
         Log.d(TAG,"length:"+length);
         if (a >= 0 && a < 1/4.0){
             smallRadius = 15;
+            
         }else if (a >= 1/4.0 && a< 1/2.0){
             smallRadius = 13;
         }else if (a >= 1/2.0 && a< 3/4.0){
