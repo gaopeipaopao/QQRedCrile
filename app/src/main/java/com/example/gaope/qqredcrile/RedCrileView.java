@@ -14,7 +14,10 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.BounceInterpolator;
+import android.view.animation.OvershootInterpolator;
 import android.widget.LinearLayout;
+import android.widget.Scroller;
 import android.widget.TextView;
 
 import org.w3c.dom.Text;
@@ -87,6 +90,11 @@ public class RedCrileView extends LinearLayout {
     private float maxLength;
 
     /**
+     * 在minLength范围内释放就会回到起点
+     */
+    private float minLength;
+
+    /**
      *拉动的距离
      */
     private float length;
@@ -96,6 +104,11 @@ public class RedCrileView extends LinearLayout {
      */
     private boolean touch;
 
+    /**
+     *Scroller滑动
+     */
+    private Scroller scroller;
+
 
     public RedCrileView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -103,11 +116,14 @@ public class RedCrileView extends LinearLayout {
         paint.setColor(Color.parseColor("#fffb5d5c"));
         paint.setStyle(Paint.Style.FILL);
 
+        scroller = new Scroller(getContext());
+
         touch = true;
 
         smallRadius = 15;
         bigRadius = 15;
         maxLength = 200;
+        minLength = 150;
 
         smallCrileCenter = new PointF(500,500);
         bigCrileCenter = new PointF(500,500);
@@ -150,6 +166,7 @@ public class RedCrileView extends LinearLayout {
         bigCrileCenter.y = event.getY();
         dx =  (bigCrileCenter.x - smallCrileCenter.x);
         dy =  (bigCrileCenter.y - smallCrileCenter.y);
+        length = (float) Math.sqrt(Math.pow(dx,2) + Math.pow(dy,2));
 
         switch (event.getAction()){
             case MotionEvent.ACTION_DOWN:
@@ -160,25 +177,41 @@ public class RedCrileView extends LinearLayout {
                 }
                 break;
             case MotionEvent.ACTION_UP:
-                if (length < maxLength){
-                    becomeSmall();
-                }
+                //length小于minLength，回到起点，有回弹效果
+                if (length <= minLength){
+                    kickBackCenter();
+                }else {
 
+                }
+                return true;
         }
 
-//        if(bigCrileCenter.x > textView.getLeft() && bigCrileCenter.x < textView.getRight()
-//                && bigCrileCenter.y > textView.getTop() && bigCrileCenter.y < textView.getBottom()) {
-//            invalidate();
-//            return true;
-//        }
         Log.d(TAG,"dx:"+dx);
         invalidate();
         return true;
     }
 
-    private void becomeSmall() {
-        ValueAnimator value = ValueAnimator.ofFloat(0,maxLength);
+    private void kickBackCenter() {
+        ValueAnimator valu = ValueAnimator.ofObject(new KickBackEvaluator(bigCrileCenter),bigCrileCenter,smallCrileCenter);
+        valu.setDuration(1000);
+        valu.setInterpolator(new BounceInterpolator());
+        valu.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                bigCrileCenter = (PointF) animation.getAnimatedValue();
+                invalidate();
+            }
+        });
+        valu.start();
+    }
 
+    @Override
+    public void computeScroll() {
+//        super.computeScroll();
+        if (scroller.computeScrollOffset()){
+            scrollTo(scroller.getCurrX(),scroller.getCurrY());
+            invalidate();
+        }
     }
 
     @Override
@@ -296,7 +329,7 @@ public class RedCrileView extends LinearLayout {
         }
     }
     void judgeRadius(){
-        length = (float) Math.sqrt(Math.pow(dx,2) + Math.pow(dy,2));
+
         float a = length / maxLength;
         Log.d(TAG,"aaa:"+a);
         Log.d(TAG,"length:"+length);
