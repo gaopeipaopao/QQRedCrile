@@ -1,5 +1,6 @@
 package com.example.gaope.qqredcrile;
 
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -75,7 +76,25 @@ public class RedCrileView extends LinearLayout {
      */
     private float dy = 0;
 
+    /**
+     * 显示的Text文本
+     */
     private TextView textView;
+
+    /**
+     *拉动的最大距离
+     */
+    private float maxLength;
+
+    /**
+     *拉动的距离
+     */
+    private float length;
+
+    /**
+     * 判断是否是拉动状态
+     */
+    private boolean touch;
 
 
     public RedCrileView(Context context, @Nullable AttributeSet attrs) {
@@ -84,8 +103,11 @@ public class RedCrileView extends LinearLayout {
         paint.setColor(Color.parseColor("#fffb5d5c"));
         paint.setStyle(Paint.Style.FILL);
 
-        smallRadius = 10;
-        bigRadius = 10;
+        touch = true;
+
+        smallRadius = 15;
+        bigRadius = 15;
+        maxLength = 200;
 
         smallCrileCenter = new PointF(500,500);
         bigCrileCenter = new PointF(500,500);
@@ -126,36 +148,67 @@ public class RedCrileView extends LinearLayout {
 
         bigCrileCenter.x = event.getX();
         bigCrileCenter.y = event.getY();
+        dx =  (bigCrileCenter.x - smallCrileCenter.x);
+        dy =  (bigCrileCenter.y - smallCrileCenter.y);
 
-        if(bigCrileCenter.x > textView.getLeft() && bigCrileCenter.x < textView.getRight()
-                && bigCrileCenter.y > textView.getTop() && bigCrileCenter.y < textView.getBottom()) {
-            invalidate();
-            return true;
+        switch (event.getAction()){
+            case MotionEvent.ACTION_DOWN:
+                if(bigCrileCenter.x > textView.getLeft() && bigCrileCenter.x < textView.getRight()
+                        && bigCrileCenter.y > textView.getTop() && bigCrileCenter.y < textView.getBottom()) {
+                    invalidate();
+                    return true;
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                if (length < maxLength){
+                    becomeSmall();
+                }
+
         }
+
+//        if(bigCrileCenter.x > textView.getLeft() && bigCrileCenter.x < textView.getRight()
+//                && bigCrileCenter.y > textView.getTop() && bigCrileCenter.y < textView.getBottom()) {
+//            invalidate();
+//            return true;
+//        }
         Log.d(TAG,"dx:"+dx);
         invalidate();
         return true;
+    }
+
+    private void becomeSmall() {
+        ValueAnimator value = ValueAnimator.ofFloat(0,maxLength);
+
     }
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
 
         canvas.saveLayer(new RectF(0,0,getWidth(),getHeight()),paint,Canvas.ALL_SAVE_FLAG);
-        canvas.drawCircle(smallCrileCenter.x,smallCrileCenter.y,smallRadius,paint);
+        judgeRadius();
 
-        textView.setX(bigCrileCenter.x  - textView.getWidth()/2);
-        textView.setY(bigCrileCenter.y - textView.getHeight()/2);
+        if (touch){
+            canvas.drawCircle(smallCrileCenter.x,smallCrileCenter.y,smallRadius,paint);
+            textView.setX(bigCrileCenter.x  - textView.getWidth()/2);
+            textView.setY(bigCrileCenter.y - textView.getHeight()/2);
+            obtainData();
+            Path path = new Path();
+            path.reset();
+            path.moveTo(smallData[0],smallData[1]);
+            path.quadTo(control.x,control.y,bigData[0],bigData[1]);
+            path.lineTo(bigData[2],bigData[3]);
+            path.quadTo(control.x,control.y,smallData[2],smallData[3]);
+            path.lineTo(smallData[0],smallData[1]);
+            canvas.drawPath(path,paint);
+        }else {
+            textView.setX(bigCrileCenter.x  - textView.getWidth()/2);
+            textView.setY(bigCrileCenter.y - textView.getHeight()/2);
+        }
 
-        obtainData();
-        Path path = new Path();
-        path.reset();
-        path.moveTo(smallData[0],smallData[1]);
-        path.quadTo(control.x,control.y,bigData[0],bigData[1]);
-        path.lineTo(bigData[2],bigData[3]);
-        path.quadTo(control.x,control.y,smallData[2],smallData[3]);
-        path.lineTo(smallData[0],smallData[1]);
-        canvas.drawPath(path,paint);
+
         canvas.restore();
+
+        //绘制自身然后绘制子控件，子控件覆盖在父控件上面
         super.dispatchDraw(canvas);
     }
 
@@ -181,8 +234,8 @@ public class RedCrileView extends LinearLayout {
     private void obtainData() {
 
         float aa = (float) Math.atan( dy/dx );
-        dx =  (bigCrileCenter.x - smallCrileCenter.x);
-        dy =  (bigCrileCenter.y - smallCrileCenter.y);
+//        dx =  (bigCrileCenter.x - smallCrileCenter.x);
+//        dy =  (bigCrileCenter.y - smallCrileCenter.y);
         control.x = (smallCrileCenter.x + bigCrileCenter.x)/2;
         control.y = (smallCrileCenter.y + bigCrileCenter.y)/2;
 
@@ -209,13 +262,6 @@ public class RedCrileView extends LinearLayout {
 
             Log.d(TAG,"am[0]:"+smallData[0]);
         }
-
-//        /**
-//         * 大圆在小圆的右上左下
-//         */
-//        if ( (dx > 0 && dy < 0) || (dx < 0 && dy > 0) ){
-//
-//        }
 
         /**
          * 大圆在小圆的上面和小面，dx为0，dy不为0
@@ -247,6 +293,22 @@ public class RedCrileView extends LinearLayout {
             bigData[1] = bigCrileCenter.y - bigRadius;
             bigData[2] = bigCrileCenter.x;
             bigData[3] = bigCrileCenter.y + bigRadius;
+        }
+    }
+    void judgeRadius(){
+        length = (float) Math.sqrt(Math.pow(dx,2) + Math.pow(dy,2));
+        float a = length / maxLength;
+        Log.d(TAG,"aaa:"+a);
+        Log.d(TAG,"length:"+length);
+        if (a >= 0 && a < 1/4.0){
+            smallRadius = 15;
+        }else if (a >= 1/4.0 && a< 1/2.0){
+            smallRadius = 13;
+        }else if (a >= 1/2.0 && a< 3/4.0){
+            smallRadius = 8;
+        }else if (a >= 3/4.0 && a<= 1){
+            smallRadius = 0;
+            touch = false;
         }
     }
 
