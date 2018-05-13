@@ -8,6 +8,8 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.RectF;
+import android.graphics.drawable.AnimationDrawable;
+import android.provider.ContactsContract;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -15,7 +17,9 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.BounceInterpolator;
+import android.view.animation.LinearInterpolator;
 import android.view.animation.OvershootInterpolator;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Scroller;
 import android.widget.TextView;
@@ -110,10 +114,24 @@ public class RedCrileView extends LinearLayout {
     private boolean mtext;
 
     /**
+     * mImage判断是否到最后
+     */
+    private boolean mImage;
+
+    /**
      *Scroller滑动
      */
     private Scroller scroller;
 
+    private ImageView imageView;
+
+    /**
+     * 照片的集合
+     */
+    private int[] photo = new int[]{
+            R.drawable.photo1,R.drawable.photo2,R.drawable.photo3,
+
+};
 
     public RedCrileView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -125,6 +143,7 @@ public class RedCrileView extends LinearLayout {
 
         touch = true;
         mtext = true;
+        mImage = true;
 
         smallRadius = 15;
         bigRadius = 15;
@@ -147,6 +166,13 @@ public class RedCrileView extends LinearLayout {
         textView.setText("99+");
         textView.setTextColor(Color.WHITE);
         addView(textView);
+
+        imageView = new ImageView(getContext());
+        LayoutParams layoutParams = new LayoutParams(80,80);
+        imageView.setLayoutParams(layoutParams);
+        imageView.setVisibility(View.INVISIBLE);
+        imageView.setImageResource(R.drawable.photo1);
+        addView(imageView);
     }
 
     @Override
@@ -183,13 +209,16 @@ public class RedCrileView extends LinearLayout {
                 }
                 break;
             case MotionEvent.ACTION_UP:
+                if (!mImage){
+                    imageView.setVisibility(View.GONE);
+                }
                 //length小于minLength，回到起点，有回弹效果
                 if (touch ){
                     mtext = true;
                     kickBackCenter();
                     return true;
                 }
-                if (mtext && !touch ){
+                if (mtext && !touch && mImage){
                     //在范围内就回到起点
                     Log.d(TAG,"touch:"+touch);
                     if(length <= minLength){
@@ -200,6 +229,13 @@ public class RedCrileView extends LinearLayout {
                         return true;
                     }else {
                         //不在范围内就进行图片爆炸动画
+                        textView.setVisibility(View.GONE);
+                        imageView.setVisibility(View.VISIBLE);
+                        imageView.setX(bigCrileCenter.x);
+                        imageView.setY(bigCrileCenter.y);
+                        photoBlast();
+                        mImage = false;
+                  //      imageView.setVisibility(View.GONE);
                     }
 
 
@@ -210,6 +246,22 @@ public class RedCrileView extends LinearLayout {
         Log.d(TAG,"dx:"+dx);
         invalidate();
         return true;
+    }
+
+    private void photoBlast() {
+        Log.d(TAG,"bbbbb");
+        ValueAnimator value = ValueAnimator.ofInt(0,photo.length-1);
+        value.setInterpolator(new LinearInterpolator());
+        value.setDuration(1000);
+        value.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                Log.d(TAG,"acab:"+(int)animation.getAnimatedValue());
+                imageView.setImageResource(photo[(int)animation.getAnimatedValue()]);
+                invalidate();
+            }
+        });
+        value.start();
     }
 
     private void kickBackCenter() {
@@ -224,15 +276,6 @@ public class RedCrileView extends LinearLayout {
             }
         });
         valu.start();
-    }
-
-    @Override
-    public void computeScroll() {
-//        super.computeScroll();
-        if (scroller.computeScrollOffset()){
-            scrollTo(scroller.getCurrX(),scroller.getCurrY());
-            invalidate();
-        }
     }
 
     @Override
@@ -266,30 +309,9 @@ public class RedCrileView extends LinearLayout {
         super.dispatchDraw(canvas);
     }
 
- //   @Override
-//    protected void onDraw(Canvas canvas) {
-//        super.onDraw(canvas);
-////        canvas.drawCircle(smallCrileCenter.x,smallCrileCenter.y,smallRadius,paint);
-////        canvas.drawCircle(bigCrileCenter.x,bigCrileCenter.y,bigRadius,paint);
-////        obtainData();
-////        Path path = new Path();
-////        path.reset();
-////        path.moveTo(smallData[0],smallData[1]);
-////        path.quadTo(control.x,control.y,bigData[0],bigData[1]);
-////        path.lineTo(bigData[2],bigData[3]);
-////        path.quadTo(control.x,control.y,smallData[2],smallData[3]);
-////        path.lineTo(smallData[0],smallData[1]);
-////        canvas.drawPath(path,paint);
-//
-//
-//
-//    }
-
     private void obtainData() {
 
         float aa = (float) Math.atan( dy/dx );
-//        dx =  (bigCrileCenter.x - smallCrileCenter.x);
-//        dy =  (bigCrileCenter.y - smallCrileCenter.y);
         control.x = (smallCrileCenter.x + bigCrileCenter.x)/2;
         control.y = (smallCrileCenter.y + bigCrileCenter.y)/2;
 
