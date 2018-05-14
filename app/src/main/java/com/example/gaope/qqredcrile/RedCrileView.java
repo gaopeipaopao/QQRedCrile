@@ -1,5 +1,7 @@
 package com.example.gaope.qqredcrile;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -159,7 +161,7 @@ public class RedCrileView extends LinearLayout {
         bigData = new float[4];
 
         textView = new TextView(getContext());
-        LayoutParams lp = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT);
+        LayoutParams lp = new LayoutParams(100,80);
         textView.setLayoutParams(lp);
         textView.setPadding(5,5,5,5);
         textView.setBackgroundResource(R.drawable.red_text);
@@ -252,13 +254,20 @@ public class RedCrileView extends LinearLayout {
         Log.d(TAG,"bbbbb");
         ValueAnimator value = ValueAnimator.ofInt(0,photo.length-1);
         value.setInterpolator(new LinearInterpolator());
-        value.setDuration(1000);
+        value.setDuration(500);
         value.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 Log.d(TAG,"acab:"+(int)animation.getAnimatedValue());
                 imageView.setImageResource(photo[(int)animation.getAnimatedValue()]);
                 invalidate();
+            }
+        });
+        value.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+                imageView.setVisibility(View.GONE);
             }
         });
         value.start();
